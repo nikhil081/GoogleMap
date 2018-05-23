@@ -16,11 +16,15 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment;
+import com.google.android.gms.location.places.ui.PlaceSelectionListener;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -44,18 +48,44 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     Marker mCurrLocationMarker;
     FusedLocationProviderClient mFusedLocationClient;
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
+    PlaceAutocompleteFragment placeAutoComplete;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
+        placeAutoComplete = (PlaceAutocompleteFragment) getFragmentManager().findFragmentById(R.id.place_autocomplete);
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         mapFrag = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFrag.getMapAsync(this);
+        placeAutoComplete.setOnPlaceSelectedListener(new PlaceSelectionListener() {
+            @Override
+            public void onPlaceSelected(Place place) {
+                addMarker(place);
+            }
+
+            @Override
+            public void onError(Status status) {
+
+            }
+        });
 
 
+    }
+
+    private void addMarker(Place place) {
+
+        MarkerOptions markerOptions = new MarkerOptions();
+
+        markerOptions.position(place.getLatLng());
+        markerOptions.title(place.getName()+"");
+        markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
+
+        mGoogleMap.addMarker(markerOptions);
+        mGoogleMap.moveCamera(CameraUpdateFactory.newLatLng(place.getLatLng()));
+        mGoogleMap.animateCamera(CameraUpdateFactory.zoomTo(13));
     }
 
     private void checkLocationPermission() {
