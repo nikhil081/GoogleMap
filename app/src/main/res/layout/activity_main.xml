@@ -5,13 +5,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
+
     <Button
+        android:id="@+id/btn"
         android:layout_width="100dp"
         android:layout_height="100dp"
-        android:text="map"
-        android:id="@+id/btn"
         android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"/>
+        android:layout_centerVertical="true"
+        android:text="map" />
 
-    
+
 </RelativeLayout>
