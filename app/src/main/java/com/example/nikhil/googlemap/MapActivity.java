@@ -4,7 +4,9 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.location.Criteria;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Looper;
 import android.support.annotation.NonNull;
@@ -14,6 +16,10 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.google.android.gms.common.api.Status;
@@ -40,8 +46,12 @@ import com.google.android.gms.tasks.Task;
 import java.util.List;
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
+    Spinner spinner;
+    private int PROXIMITY_RADIUS = 10000;
     GoogleMap mGoogleMap;
     SupportMapFragment mapFrag;
+    double latitude;
+    double longitude;
     @SuppressLint("RestrictedApi")
     LocationRequest mLocationRequest = new LocationRequest();
     Location mLastLocation;
@@ -54,6 +64,61 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
+        spinner = findViewById(R.id.spin);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this
+                , R.array.places, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_item);
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                latitude = getlat();
+                longitude = getlong();
+                Object value = parent.getItemAtPosition(position);
+                switch (position){
+                    case 0: String hospital = "hospital";
+                        mGoogleMap.clear();
+                        String urlhospital = getUrl(latitude, longitude, hospital);
+                        Object[] DataTransfer= new Object[2];
+                        DataTransfer[0] = mGoogleMap;
+                        DataTransfer[1] = urlhospital;
+                        GetNearbyPlacesData getNearbyPlacesDatahospital = new GetNearbyPlacesData();
+                        getNearbyPlacesDatahospital.execute(DataTransfer);
+                        Toast.makeText(MapActivity.this, "Nearby Hospitals", Toast.LENGTH_LONG).show();
+                        break;
+                    case 1:String doctor = "doctor";
+                        mGoogleMap.clear();
+
+                        String urldoctor = getUrl(latitude, longitude, doctor);
+                        Object[] DataTransfer1 = new Object[2];
+                        DataTransfer1[0] = mGoogleMap;
+                        DataTransfer1[1] = urldoctor;
+                        GetNearbyPlacesData getNearbyPlacesData = new GetNearbyPlacesData();
+                        getNearbyPlacesData.execute(DataTransfer1);
+                        Toast.makeText(MapActivity.this, "Nearby Doctors", Toast.LENGTH_LONG).show();
+                        break;
+                    case 2:     String school = "school";
+                        mGoogleMap.clear();
+                        String urlschool= getUrl(latitude, longitude, school);
+                        Object[] DataTransfer2 = new Object[2];
+                        DataTransfer2[0] = mGoogleMap;
+                        DataTransfer2[1] = urlschool;
+                        GetNearbyPlacesData getNearbyPlacesDataschool = new GetNearbyPlacesData();
+                        getNearbyPlacesDataschool.execute(DataTransfer2);
+                        Toast.makeText(MapActivity.this, "Nearby Schools", Toast.LENGTH_LONG).show();
+                        break;
+
+                }
+
+                }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
+
+        });
+
         placeAutoComplete = (PlaceAutocompleteFragment) getFragmentManager().findFragmentById(R.id.place_autocomplete);
 
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -80,7 +145,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         MarkerOptions markerOptions = new MarkerOptions();
 
         markerOptions.position(place.getLatLng());
-        markerOptions.title(place.getName()+"");
+        markerOptions.title(place.getName() + "");
         markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
 
         mGoogleMap.addMarker(markerOptions);
@@ -197,5 +262,61 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             }
         }
     };
+
+    private String getUrl(double latitude, double longitude, String nearbyPlace) {
+
+        StringBuilder googlePlacesUrl = new StringBuilder("https://maps.googleapis.com/maps/api/place/nearbysearch/json?");
+        googlePlacesUrl.append("location=" + latitude + "," + longitude);
+        googlePlacesUrl.append("&radius=" + PROXIMITY_RADIUS);
+        googlePlacesUrl.append("&type=" + nearbyPlace);
+        googlePlacesUrl.append("&sensor=true");
+        googlePlacesUrl.append("&key=" + "AIzaSyDZmqewJm0gG1TXkgqOo34cqzjULmk7Tws");
+        Log.d("getUrl", googlePlacesUrl.toString());
+        return (googlePlacesUrl.toString());
+    }
+
+    private double getlat() {
+
+        LocationManager service = (LocationManager) getSystemService(LOCATION_SERVICE);
+        Criteria criteria = new Criteria();
+        String provider = service.getBestProvider(criteria, false);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+
+        }
+        Location location = service.getLastKnownLocation(provider);
+        double lat = location.getLatitude();
+        Log.d("mapactivty", "getlat: getting latitude"+lat);
+        return  lat;
+
+    }
+    private double getlong() {
+
+
+        LocationManager service = (LocationManager) getSystemService(LOCATION_SERVICE);
+        Criteria criteria = new Criteria();
+        String provider = service.getBestProvider(criteria, false);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+
+        }
+        Location location = service.getLastKnownLocation(provider);
+        double longi= location.getLongitude();
+        Log.d("mapactivty", "getlong: getting longitude"+longi);
+        return  longi;
+
+    }
 
 }
